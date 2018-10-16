@@ -1,0 +1,76 @@
+package com.tardis.pillrasp;
+
+/**
+ * Hello world!
+
+ *
+ */
+
+
+import com.amazonaws.services.iot.client.AWSIotDevice;
+
+import com.amazonaws.services.iot.client.AWSIotException;
+import com.amazonaws.services.iot.client.AWSIotMqttClient;
+import com.amazonaws.services.iot.client.sample.sampleUtil.SampleUtil;
+import com.amazonaws.services.iot.client.sample.sampleUtil.SampleUtil.KeyStorePasswordPair;
+
+import com.pi4j.io.gpio.GpioController;
+import com.pi4j.io.gpio.GpioFactory;
+import com.pi4j.io.gpio.GpioPinDigitalOutput;
+import com.pi4j.io.gpio.RaspiPin;
+import org.json.*;
+public class App 
+{
+	public static void main( String args[]) throws InterruptedException 
+    {
+    	String clientEndpoint = "a2zh8rj9wu8i0t.iot.us-east-1.amazonaws.com";
+    	String clientId = "Luffyclient1";
+    	String certificateFile = "/home/pi/Desktop/a2f13f7e06-certificate.pem.crt";
+    	String privateKeyFile = "/home/pi/Desktop/a2f13f7e06-private.pem.key";
+    	KeyStorePasswordPair pair = SampleUtil.getKeyStorePasswordPair(certificateFile,privateKeyFile);
+    	AWSIotMqttClient client = new AWSIotMqttClient(clientEndpoint, clientId, pair.keyStore, pair.keyPassword);
+    	AWSIotDevice awsIotDevice = new AWSIotDevice("Luffy");
+    	try {
+
+    		GpioController gpio = GpioFactory.getInstance();
+    		//GpioPinDigitalOutput pin0 = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_00);
+    		final GpioPinDigitalOutput pinA = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_04, "PinA");
+    		final GpioPinDigitalOutput pinB = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_05, "PinB");
+    		final GpioPinDigitalOutput pinE = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_06, "PinE");
+    		client.attach(awsIotDevice);
+    		client.connect();
+   
+    		String jsonDocument = awsIotDevice.get();
+    		JSONObject jsonObject=new JSONObject(jsonDocument);
+    		JSONObject stateObject=jsonObject.getJSONObject("state");
+    		JSONObject reportedObject=stateObject.getJSONObject("reported");
+    		String value=reportedObject.getString("motor");
+    		System.out.println(value);
+    		if(value.equals("on")) 
+    		System.out.println("ON");
+    		//pin0.high();
+    		pinA.high();
+    		pinB.low();
+    		pinE.high();
+    		// wait 6 seconds
+    		Thread.sleep(6000);
+    		pinE.low();
+    		gpio.shutdown();
+    		//pin0.Delay(1000);
+    		/*else if(value.equals("off"))
+    		{
+    		System.out.println("OFF");
+    		pin0.low();
+    		}*/
+    		
+    		
+    		
+    		//client.disconnect();
+    		} catch (AWSIotException e) {
+    		System.out.println("ERROR");
+    		}
+    		}
+    		}
+    
+
+
